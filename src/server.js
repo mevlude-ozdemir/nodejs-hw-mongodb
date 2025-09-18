@@ -4,14 +4,14 @@ import express from 'express';
 import pino from 'pino-http';
 import cors from 'cors';
 import { env } from './utils/env.js';
-import { getAllContacts, getContactById } from './services/contacts.js';
-//4. Sunucunun, PORT ortam değişkeni aracılığıyla belirtilen veya belirtilmemişse 3000 numaralı portta başlatılması
+import contactsRouter from './routers/contacts.js';
+
 const PORT = Number(env('PORT', '3000'));
 
 export const setupServer = () => {
-  //1.express() çağrısıyla sunucunun oluşturulması
+ 
   const app = express();
-  //2.cors ve pino logger'ının ayarlanması
+
   app.use(express.json());
   app.use(cors());
 
@@ -22,38 +22,9 @@ export const setupServer = () => {
       },
     }),
   );
+  app.use(contactsRouter); // Yönlendiriciyi app'e middleware olarak ekliyoruz
 
-  app.get('/contacts', async (req, res) => {
-    const contacts = await getAllContacts();
 
-    res.status(200).json({
-      status: 200,
-      message: 'Successfully found contacts!',
-      data: contacts,
-    });
-  });
-
-  app.get('/contacts/:contactId', async (req, res) => {
-    const { contactId } = req.params;
-    const contact = await getContactById(contactId);
-
-    //  bulunamazsa yanıt
-    if (!contact) {
-      res.status(404).json({
-        message: 'Contact not found',
-      });
-      return;
-    }
-
-    //  bulunursa yanıt
-    res.status(200).json({
-      status: 200,
-      message: `Successfully found contact with id ${contactId}!`,
-      data: contact,
-    });
-  });
-
-  //3.Mevcut olmayan rotalar için 404 hata durumu ve uygun mesaj döndürülmesi.
   app.use((req, res) => {
     res.status(404).json({
       message: 'Not found',
