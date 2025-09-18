@@ -23,8 +23,7 @@ export const setupServer = () => {
       },
     }),
   );
-  app.use(contactsRouter); // Yönlendiriciyi app'e middleware olarak ekliyoruz
-
+  app.use(contactsRouter); 
   app.use(notFoundHandler);
 
   app.use(errorHandler);
