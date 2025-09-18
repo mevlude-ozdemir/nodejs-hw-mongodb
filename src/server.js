@@ -4,7 +4,7 @@ import express from 'express';
 import pino from 'pino-http';
 import cors from 'cors';
 import { env } from './utils/env.js';
-import { getAllContacts } from './services/contacts.js';
+import { getAllContacts, getContactById } from './services/contacts.js';
 //4. Sunucunun, PORT ortam değişkeni aracılığıyla belirtilen veya belirtilmemişse 3000 numaralı portta başlatılması
 const PORT = Number(env('PORT', '3000'));
 
@@ -23,12 +23,6 @@ export const setupServer = () => {
     }),
   );
 
-  app.get('/', (req, res) => {
-    res.json({
-      message: 'Hello world!',
-    });
-  });
-
   app.get('/contacts', async (req, res) => {
     const contacts = await getAllContacts();
 
@@ -39,23 +33,25 @@ export const setupServer = () => {
     });
   });
 
-  //   app.get('/students/:studentId', async (req, res) => {
-  //     const { studentId } = req.params;
-  //     const student = await getStudentById(studentId);
+  app.get('/contacts/:contactId', async (req, res) => {
+    const { contactId } = req.params;
+    const contact = await getContactById(contactId);
 
-  //     // Öğrenci bulunamazsa yanıt
-  //     if (!student) {
-  //       res.status(404).json({
-  //         message: 'Öğrenci bulunamadı',
-  //       });
-  //       return;
-  //     }
+    //  bulunamazsa yanıt
+    if (!contact) {
+      res.status(404).json({
+        message: 'Contact not found',
+      });
+      return;
+    }
 
-  //     // Öğrenci bulunursa yanıt
-  //     res.status(200).json({
-  //       data: student,
-  //     });
-  //   });
+    //  bulunursa yanıt
+    res.status(200).json({
+      status: 200,
+      message: `Successfully found contact with id ${contactId}!`,
+      data: contact,
+    });
+  });
 
   //3.Mevcut olmayan rotalar için 404 hata durumu ve uygun mesaj döndürülmesi.
   app.use((req, res) => {
