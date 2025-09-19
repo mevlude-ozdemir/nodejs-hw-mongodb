@@ -19,7 +19,7 @@ router.get('/contacts', ctrlWrapper(getContactsController));
 router.get('/contacts/:contactId',
   isValidId, ctrlWrapper(getContactByIdController));
 
-router.post('/contacts', validateBody(createContactSchema), ctrlWrapper(createContactController));
+router.post('/register', validateBody(createContactSchema), ctrlWrapper(createContactController));
 
 router.patch('/contacts/:contactId',
   isValidId, validateBody(updateContactSchema), ctrlWrapper(patchContactController));//update kullandım çünkü patch ederken zorunlu alanlara gerek yok.
