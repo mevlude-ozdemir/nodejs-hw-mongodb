@@ -16,6 +16,7 @@ export const getContactsController = async (req, res) => {
     sortBy,
     sortOrder,
     filter,
+    
   });
   console.log('CONTACTS COUNT:', contacts.data.length); // debug
 
@@ -62,6 +63,7 @@ export const createContactController = async (req, res, next) => {
       email,
       isFavourite,
       contactType,
+      userId: req.user._id,
     });
 
     res.status(201).json({
