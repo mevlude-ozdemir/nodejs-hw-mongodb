@@ -47,8 +47,8 @@ export const getContactByIdController = async (req, res) => {
 };
 
 
-export const createContactController = async (req, res, next) => {
-  try {
+export const createContactController = async (req, res) => {
+  
     const { name, phoneNumber, contactType } = req.body;
 
     // zorunlu alan kontrolü
@@ -57,8 +57,9 @@ export const createContactController = async (req, res, next) => {
         status: 400,
         message: "Missing required fields: name, phoneNumber, contactType",
       });
-      
     }
+      
+    
 
     const newContact = await createContact({
       ...req.body,
@@ -70,10 +71,8 @@ export const createContactController = async (req, res, next) => {
       message: "Successfully created a contact!",
       data: newContact,
     });
-  } catch (error) {
-    next(error);
-  }
 };
+
 
 export const patchContactController = async (req, res, next) => {
   try {
