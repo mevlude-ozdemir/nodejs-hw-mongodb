@@ -16,9 +16,11 @@ export const getContactsController = async (req, res) => {
     sortBy,
     sortOrder,
     filter,
+    userId: req.user._id,
     
   });
   console.log('CONTACTS COUNT:', contacts.data.length); // debug
+  console.log('USER ID:', req.user?._id);
 
   res.json({
     status: 200,
@@ -47,7 +49,7 @@ export const getContactByIdController = async (req, res) => {
 
 export const createContactController = async (req, res, next) => {
   try {
-    const { name, phoneNumber, email, isFavourite, contactType } = req.body;
+    const { name, phoneNumber, contactType } = req.body;
 
     // zorunlu alan kontrolü
     if (!name || !phoneNumber || !contactType) {
@@ -55,14 +57,11 @@ export const createContactController = async (req, res, next) => {
         status: 400,
         message: "Missing required fields: name, phoneNumber, contactType",
       });
+      
     }
 
     const newContact = await createContact({
-      name,
-      phoneNumber,
-      email,
-      isFavourite,
-      contactType,
+      ...req.body,
       userId: req.user._id,
     });
 
