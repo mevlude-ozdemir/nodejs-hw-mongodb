@@ -1,9 +1,19 @@
 // src/controllers/contacts.js
-import { getAllContacts, getContactById,createContact, updateContact ,deleteContact } from '../services/contacts.js';
+import {
+  getAllContacts,
+  getContactById,
+  createContact,
+  updateContact,
+  deleteContact,
+} from '../services/contacts.js';
 import createHttpError from 'http-errors';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import { saveFileToUploadDir } from '../utils/saveFileToUploadDir.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import { env } from '../utils/env.js';
+
 
 export const getContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
@@ -17,7 +27,6 @@ export const getContactsController = async (req, res) => {
     sortOrder,
     filter,
     userId: req.user._id,
-    
   });
   console.log('CONTACTS COUNT:', contacts.data.length); // debug
   console.log('USER ID:', req.user?._id);
@@ -32,20 +41,19 @@ export const getContactsController = async (req, res) => {
 export const getContactByIdController = async (req, res) => {
   const { contactId } = req.params;
   const contact = await getContactById(contactId);
-  
+
   //  bulunamazsa cevap
   if (!contact) {
     throw createHttpError(404, 'Contact not found');
   }
 
-	//  bulunursa cevap
+  //  bulunursa cevap
   res.json({
     status: 200,
     message: `Successfully found contact with id ${contactId}!`,
     data: contact,
   });
 };
-
 
 export const createContactController = async (req, res, next) => {
   try {
@@ -55,9 +63,8 @@ export const createContactController = async (req, res, next) => {
     if (!name || !phoneNumber || !contactType) {
       return res.status(400).json({
         status: 400,
-        message: "Missing required fields: name, phoneNumber, contactType",
+        message: 'Missing required fields: name, phoneNumber, contactType',
       });
-      
     }
 
     const newContact = await createContact({
@@ -67,7 +74,7 @@ export const createContactController = async (req, res, next) => {
 
     res.status(201).json({
       status: 201,
-      message: "Successfully created a contact!",
+      message: 'Successfully created a contact!',
       data: newContact,
     });
   } catch (error) {
@@ -79,24 +86,50 @@ export const patchContactController = async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const payload = req.body;
+    const photo = req.file;
+
+    let photoUrl;
+
+    if (photo) {
+    if (env('ENABLE_CLOUDINARY') === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
+
+    const result = await updateContact(contactId, {
+      ...req.body,
+      photo: photoUrl,
+    });
+
+    if (!result) {
+      next(createHttpError(404, 'Student not found'));
+      return;
+    }
+    res.json({
+      status: 200,
+      message: `Successfully patched a student!`,
+      data: result.student,
+    });
 
     // Güncelleme isteği boş mu kontrol et
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({
         status: 400,
-        message: "No data provided for update",
+        message: 'No data provided for update',
       });
     }
 
     const updatedContact = await updateContact(contactId, payload);
 
     if (!updatedContact) {
-      return next(createHttpError(404, "Contact not found")); 
+      return next(createHttpError(404, 'Contact not found'));
     }
 
     res.status(200).json({
       status: 200,
-      message: "Successfully patched a contact!",
+      message: 'Successfully patched a contact!',
       data: updatedContact,
     });
   } catch (error) {
@@ -111,7 +144,6 @@ export const deleteContactController = async (req, res, next) => {
     const deleted = await deleteContact(contactId);
 
     if (!deleted) {
-     
       return next(createHttpError(404, 'Contact not found'));
     }
 
