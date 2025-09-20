@@ -57,7 +57,7 @@ export const getContactByIdController = async (req, res) => {
 
 export const createContactController = async (req, res, next) => {
   try {
-    const { name, phoneNumber, contactType } = req.body;
+    const { name, phoneNumber, contactType, email, isFavourite } = req.body;
 
     // zorunlu alan kontrolü
     if (!name || !phoneNumber || !contactType) {
@@ -67,8 +67,19 @@ export const createContactController = async (req, res, next) => {
       });
     }
 
-    const newContact = await createContact({
-      ...req.body,
+    let photoUrl;
+    if (req.file) {
+      // Cloudinary yükleme fonksiyonun
+      photoUrl = await saveFileToCloudinary(req.file);
+    }
+
+      const newContact = await createContact({
+      name,
+      phoneNumber,
+      email,
+      contactType,
+      isFavourite,
+      photo: photoUrl,
       userId: req.user._id,
     });
 
@@ -85,43 +96,25 @@ export const createContactController = async (req, res, next) => {
 export const patchContactController = async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const payload = req.body;
-    const photo = req.file;
+    const payload = { ...req.body };
 
-    let photoUrl;
-
-    if (photo) {
-    if (env('ENABLE_CLOUDINARY') === 'true') {
-      photoUrl = await saveFileToCloudinary(photo);
-    } else {
-      photoUrl = await saveFileToUploadDir(photo);
-    }
-  }
-
-    const result = await updateContact(contactId, {
-      ...req.body,
-      photo: photoUrl,
-    });
-
-    if (!result) {
-      next(createHttpError(404, 'Student not found'));
-      return;
-    }
-    res.json({
-      status: 200,
-      message: `Successfully patched a student!`,
-      data: result.student,
-    });
-
-    // Güncelleme isteği boş mu kontrol et
-    if (Object.keys(payload).length === 0) {
+    if (Object.keys(payload).length === 0 && !req.file) {
       return res.status(400).json({
         status: 400,
         message: 'No data provided for update',
       });
     }
 
-    const updatedContact = await updateContact(contactId, payload);
+    // Fotoğraf varsa yükle
+    if (req.file) {
+      if (env('ENABLE_CLOUDINARY') === 'true') {
+        payload.photo = await saveFileToCloudinary(req.file);
+      } else {
+        payload.photo = await saveFileToUploadDir(req.file);
+      }
+    }
+
+    const updatedContact = await updateContact(contactId, payload, req.user._id);
 
     if (!updatedContact) {
       return next(createHttpError(404, 'Contact not found'));
@@ -133,9 +126,10 @@ export const patchContactController = async (req, res, next) => {
       data: updatedContact,
     });
   } catch (error) {
-    next(error); // errorHandler'a gönder
+    next(error);
   }
 };
+
 
 export const deleteContactController = async (req, res, next) => {
   try {
